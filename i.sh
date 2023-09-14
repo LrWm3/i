@@ -345,6 +345,9 @@ function __i_import {
 	git -C "${I_PATH}" log $SECOND_COMMIT..$CURR_HEAD --pretty=format:"%ad|%s" --date=iso | sort | while IFS='|' read -r commitTime commitMessage; do 
 		git -C "${I_PATH}" commit --allow-empty --date="$commitTime" -qam "$commitMessage";
 	done
+
+	git -C "${I_PATH}" filter-branch --env-filter 'export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"'
+
 	# Replace the original branch with the reordered branch
 	# TODO - get the appropriate 'main' branch using whatever the current branch is
 	git -C "${I_PATH}" branch -f "${TRUNK_BRANCH}" "$TMP_BRANCH_REORDER"
