@@ -29,7 +29,7 @@ source i.sh #this creates your journal repo at ~/i
 ### List entries
 
 ```bash	
-❯ i list
+❯ i log
 21 minutes ago: went for a walk
 
 45 minutes ago: had another conversation with @fred about %anotherproject and he told me to speak to @kelly
@@ -50,21 +50,21 @@ source i.sh #this creates your journal repo at ~/i
 ### List entries between time range
 
 ```bash
-❯ i list since "30 minutes ago"
+❯ i log since "30 minutes ago"
 
 21 minutes ago: went for a walk
 
-❯ i list until "60 minutes ago"
+❯ i log until "60 minutes ago"
 
 79 minutes ago: created a journal
 
-❯ i list until "50 minutes ago" since "60 minutes ago"
+❯ i log until "50 minutes ago" since "60 minutes ago"
 
 54 minutes ago: spoke to @john
 
 54 minutes ago: added an entry
 
-❯ i list since "60 minutes ago" until "50 minutes ago"
+❯ i log since "60 minutes ago" until "50 minutes ago"
 
 54 minutes ago: spoke to @john
 

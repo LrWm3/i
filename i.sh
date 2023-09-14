@@ -19,11 +19,11 @@ function i {
 
 		"log" ) # list out the journal
 			shift
-			__i_list "$@"; return;;
+			__i_log "$@"; return;;
 
-		"list" ) # list out the journal
+		"list" ) # alias for 'log'
 			shift
-			__i_list "$@"; return;;
+			__i_log "$@"; return;;
 
 		"mentioned") # list out names mentioned
 			shift
@@ -89,12 +89,10 @@ function i {
 			__i_analyse "$@"
 			return;;
 
-
 		"upgrade") # upgrade the 'i' client
 			git -C $I_SOURCE_DIR pull
 			source $I_SOURCE_DIR/i.sh
 			return;;
-
 		
 		"help") # Display help
 			__i_help
@@ -110,7 +108,7 @@ function i {
 
 	esac
 
-	if [ ! -n "${1}" ]; then
+	if [ ! -n "${1}" ]; then # Display help if no matching command or arguments are provided
 		__i_help
 		return
 	fi
@@ -125,8 +123,7 @@ function __i_help {
   echo ""
   echo "COMMANDS:"
   echo "  amend            Overwrite the last message - useful in case of missing info or typos."
-  echo "  list             List out the journal."
-  echo "  log              Alias for 'list'."
+  echo "  log              Show the journal log."
   echo "  mentioned        List out names mentioned or entries where a specific person is mentioned."
   echo "  tagged           List out tags mentioned or entries where a specific tag is mentioned."
   echo "  find             Generic find for anything."
@@ -172,9 +169,9 @@ function __i_amend {
 }
 
 # list the entries in readable format
-# the syntax is `i list` or 
-# the syntax is `i list since "last monday" until "yesterday"`
-function __i_list {
+# the syntax is `i log` or 
+# the syntax is `i log since "last monday" until "yesterday"`
+function __i_log {
 	item="${1}"
 	local until_cmd since_cmd
 
@@ -192,7 +189,7 @@ function __i_list {
 }
 
 function __i_count_occurrences {
-	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq -c | sort -rh
+	__i_log | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq -c | sort -rh
 }
 
 # list the names mentioned
@@ -217,7 +214,7 @@ function __i_tagged_something {
 
 # basic search across the results
 function __i_find {
-	__i_list | grep "${1}"
+	__i_log | grep "${1}"
 }
 
 # run arbitrary GPT analysis commands on a specific time window from the journal
@@ -323,7 +320,7 @@ for line in sys.stdin:
 
 # used to create a list of unique occurrences of a specific character
 function __i_unique_occurrences_completion {
-	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | sort -rh | tr '\n' ' '
+	__i_log | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | sort -rh | tr '\n' ' '
 }
 
 # used to power tab completion for the @ and % characters & default
