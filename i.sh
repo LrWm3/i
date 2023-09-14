@@ -324,15 +324,26 @@ function __i_unique_occurrences_completion {
 # used to power tab completion for the @ and % characters & default
 function __i_completion {
 	local cur_word
+	prev_word="${COMP_WORDS[COMP_CWORD-1]}"
 	cur_word="${COMP_WORDS[COMP_CWORD]}"
 
 	local words
-	words="amend list mentioned tagged find occurrences git upgrade today yesterday digest remember analyse"
 
 	case $cur_word in
 	%*) words=$(__i_unique_occurrences_completion % ) ;;
 	@*) words=$(__i_unique_occurrences_completion @ ) ;;
 	esac
+
+	if [ -z "$words" ]; then
+		case $prev_word in
+		tagged) words=$(__i_unique_occurrences_completion % ) ;;
+		mentioned) words=$(__i_unique_occurrences_completion @ ) ;;
+		esac
+	fi
+
+	if [ -z "$words" ]; then
+		words="amend list mentioned tagged find occurrences git upgrade today yesterday digest remember analyse"
+	fi	
 
 	COMPREPLY+=($(compgen -W "${words}" "${COMP_WORDS[COMP_CWORD]}"))
 }
