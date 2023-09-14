@@ -238,7 +238,7 @@ function __i_analyse {
 	done
 
 	# the journal
-	OUT=$(git -C $I_PATH/ log --since "${since_cmd:=1970}" --until "${until_cmd:=now}" --pretty=format:"%cr: %B" | tr -d '"\n')
+	OUT=$(git -C $I_PATH/ log --since "${since_cmd:=1970}" --until "${until_cmd:=now}" --pretty=format:"%cd: %B" | tr -d '"\n')
 	# the whole prompt
 	PROMPT="$* \n\n\n "$OUT""
 
