@@ -261,6 +261,9 @@ function __i_analyse {
 }
 
 # import all commits by git user in git repo into the journal, then reorder the entire journal by author date
+# TODO - allow providing since & until dates to limit the import to a specific time window
+# TODO - currently pushes very first commit to bottom of dev log. may not be desirable
+# TODO - not tested very well, probably doesn't 100% work
 function __i_import {
 	# could support user as an argument, but for now just use the current git user since that is the most common use case
 	##
