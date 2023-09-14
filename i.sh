@@ -197,7 +197,7 @@ function __i_mentioned {
 
 # lists entries where a specific person is mentioned
 function __i_mentioned_someone {
-	__i_find @${1}
+	__i_find ${1} @
 }
 
 # list the tags mentioned
@@ -207,12 +207,12 @@ function __i_tagged {
 
 # lists entries where a specific tag is mentioned
 function __i_tagged_something {
-	__i_find %${1}
+	__i_find ${1} %
 }
 
 # basic search across the results
 function __i_find {
-	__i_list | grep "${1}"
+	__i_list | grep -E "${1}|${2}${1}"
 }
 
 # run arbitrary GPT analysis commands on a specific time window from the journal
