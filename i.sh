@@ -17,6 +17,10 @@ function i {
 			shift
 			__i_amend "$@"; return;;
 
+		"log" ) # list out the journal
+			shift
+			__i_list "$@"; return;;
+
 		"list" ) # list out the journal
 			shift
 			__i_list "$@"; return;;
