@@ -428,7 +428,7 @@ for line in sys.stdin:
 
 # used to create a list of unique occurrences of a specific character
 function __i_unique_occurrences_completion {
-	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | sort -rh | tr '\n' ' ' | tr -d \'\"
+	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | grep -e "^${1}[a-zA-Z0-9\-][a-zA-Z0-9\-]*" --color=never | sort -rh | tr '\n' ' ' | tr -d \'\"
 }
 
 # used to power tab completion for the @ and % characters & default
@@ -441,7 +441,7 @@ function __i_completion {
 
 	case $cur_word in
 	@*) words=$(__i_unique_occurrences_completion @ | sed 's/@[^A-Za-z0-9]//g' ) ;;
-	%*) words=$(__i_unique_occurrences_completion % ) ;;
+	%*) words=$(__i_unique_occurrences_completion % | sed 's/@[^A-Za-z0-9]//g' ) ;;
 	esac
 
 	COMPREPLY+=($(compgen -W "${words}" "${COMP_WORDS[COMP_CWORD]}"))
