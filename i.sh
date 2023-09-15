@@ -437,7 +437,7 @@ function __i_completion {
 	cur_word="${COMP_WORDS[COMP_CWORD]}"
 
 	local words
-	words="amend list mentioned tagged find occurrences git upgrade today yesterday digest remember analyse"
+	words="amend list mentioned tagged find occurrences git upgrade today yesterday digest import remember analyse"
 
 	case $cur_word in
 	@*) words=$(__i_unique_occurrences_completion @ | sed 's/@[^A-Za-z0-9]//g' ) ;;
