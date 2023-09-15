@@ -350,7 +350,7 @@ function __i_import {
 		git -C "${I_PATH}" commit --allow-empty --date="$commitTime" -qam "$commitMessage";
 	done
 
-	git -C "${I_PATH}" filter-branch --env-filter 'export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"'
+	git -C "${I_PATH}" filter-branch --env-filter -f 'export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"'
 
 	# Replace the original branch with the reordered branch
 	# TODO - get the appropriate 'main' branch using whatever the current branch is
