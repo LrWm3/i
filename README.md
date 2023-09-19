@@ -2,9 +2,13 @@
 
 `i` is a very simple terminal-based micro-journal built on git. 
 
-It takes a couple of ideas from other journaling systems and mixes them with git, to enable easy distribution of the journal between different systems. 
+It takes a couple of ideas from other journaling systems and mixes them with git, to enable easy distribution of the journal between different systems.
 
 It provides some easy ways of presenting the data along with integration with the GPT API to perform analyis of specific time windows in your journal. 
+
+It integrates with git to log commit messages made as you work into your journal.
+
+It is intended to be paired with a fork of [ai-commit](https://github.com/LrWm3/ai-commit), to help generate better commit messages, which makes for a better journal.
 
 ## install
 
@@ -234,3 +238,46 @@ You can install it either for a specific repository or globally for all your rep
 
 1. Modify your PATH variable to include this repository, or place `i.sh` on your PATH.
 2. From the root of this repository, run `git config --global core.hooksPath $PWD/.githooks`
+
+## (ALPHA) Import existing repository history for configured git user
+
+Historical commits made in repositories before installing the `.githooks/post-commit` hook may be imported into your journal as follows:
+
+```bash
+cd <repository-root-to-import-into-log>
+
+# Verify commits for git user match what you would like to import
+git log --author="$(git config user.name)"
+
+# Import the commits into your log
+i import
+
+# Repeat for each repository with commit history you would like to import
+```
+
+> This edits the commit history in such a way that it is possible it could be irrecoverably lost if an error were to occur.
+> A back-up branch is created before the process begins & is pushed. 
+>
+> If an issue occurs, rewrite the `main` branch with the backed up main branch as follows:
+> `git checkout main-backup-<timestamp> && git branch -f main main-backup-1694812119 && git push origin main -f`
+>
+> The import can then be retried or a bug report raised.
+
+## other examples
+
+Once everything is set up, with commits from previous projects imported and new commits being inserted into the log automatically, we can use
+this personal knowledge-base to remember what we've worked on and done in the past long after we've forgotten the details.
+
+```bash
+# I'm trying to remember the kinds of things I worked on in 2022 (would need to process the year but this gets the idea across)
+i analyse since "26 weeks ago" until "25 weeks ago" group what I worked on by subject and output as markdown
+
+# I'm filling my timesheet and forget what I worked on on wednesday
+i analyse since "last tuesday" until "last wednesday" summarize what I did last wednesday
+
+# I want to see the kinds of jobs I might be recommended for based on what I tend to work on
+i analyse since "1 week ago" group what I worked on by day and output as markdown
+
+# I am curious what other jobs I might be suitable for based on the work I do
+i analyse since "14 days ago" until "10 days ago" provide a list of jobs a person with this kind of work log might be suitable fo
+```

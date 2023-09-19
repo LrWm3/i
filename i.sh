@@ -89,6 +89,12 @@ function i {
 			__i_analyse "$@"
 			return;;
 
+		"analyze")
+			shift
+
+			__i_analyse "$@"
+			return;;
+
 		"import")
 			shift
 
@@ -141,7 +147,7 @@ function __i_help {
   echo "  digest           Use GPT to summarize the week's activity into a digest."
   echo "  remember         Use GPT to generate a to-do list of tasks that sound outstanding from the previous week."
   echo "  analyse          Run arbitrary GPT analysis commands on a specific time window from the journal."
-  echo "  import           Import git history into journal for user."
+  echo "  import           Import git history into journal for the currently configured git user."
   echo "  upgrade          Upgrade the 'i' client."
   echo "  help(-h|--help)  Display this help for the 'i' command."
   echo ""
