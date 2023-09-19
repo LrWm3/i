@@ -4,7 +4,7 @@
 ##
 
 if which i.sh >/dev/null 2>&1; then
-    commit_message=$(git log -1 --pretty=format:%s)
+    commit_message="$(git log -1 --pretty=\"format:%s%n%b\")"
     repo_name=$(basename $(git rev-parse --show-toplevel))
     branch_name=$(git rev-parse --abbrev-ref HEAD)
 

@@ -17,6 +17,10 @@ function i {
 			shift
 			__i_amend "$@"; return;;
 
+		"log" ) # list out the journal
+			shift
+			__i_list "$@"; return;;
+
 		"list" ) # list out the journal
 			shift
 			__i_list "$@"; return;;
@@ -85,6 +89,11 @@ function i {
 			__i_analyse "$@"
 			return;;
 
+		"import")
+			shift
+
+			__i_import "$@"
+			return;;
 
 		"upgrade") # upgrade the 'i' client
 			git -C $I_SOURCE_DIR pull
@@ -132,6 +141,7 @@ function __i_help {
   echo "  digest           Use GPT to summarize the week's activity into a digest."
   echo "  remember         Use GPT to generate a to-do list of tasks that sound outstanding from the previous week."
   echo "  analyse          Run arbitrary GPT analysis commands on a specific time window from the journal."
+  echo "  import           Import git history into journal for user."
   echo "  upgrade          Upgrade the 'i' client."
   echo "  help(-h|--help)  Display this help for the 'i' command."
   echo ""
@@ -232,7 +242,7 @@ function __i_analyse {
 	done
 
 	# the journal
-	OUT=$(git -C $I_PATH/ log --since "${since_cmd:=1970}" --until "${until_cmd:=now}" --pretty=format:"%cr: %B" | tr -d '"\n')
+	OUT=$(git -C $I_PATH/ log --since "${since_cmd:=1970}" --until "${until_cmd:=now}" --pretty=format:"%cd: %B" | tr -d '"\n')
 	# the whole prompt
 	PROMPT="$* \n\n\n "$OUT""
 
@@ -252,6 +262,106 @@ function __i_analyse {
 		]
 	}' \
 	https://api.openai.com/v1/chat/completions | __i__server_push_to_stdout
+}
+
+# import all commits by git user in git repo into the journal, then reorder the entire journal by author date
+# TODO - allow providing since & until dates to limit the import to a specific time window
+# TODO - currently pushes very first commit to bottom of dev log. may not be desirable
+# TODO - not tested very well, probably doesn't 100% work
+function __i_import {
+	# could support user as an argument, but for now just use the current git user since that is the most common use case
+	##
+	# check for .git folder to ensure we are in a git repo
+	if [ ! -d .git ]; then
+		echo "ERROR: ${PWD##*/} does not appear to be the root of a git repo"
+		return
+	fi
+
+	# FIXME - I think this is broken, it's still running hooks even when trying to disable them.
+	#			must manually remove hook configuration from .git/config for now
+	HOOKS_PATH="$(git config core.hooksPath)"
+	git config core.hooksPath .git/hooks
+
+	local TRUNK_BRANCH
+	TRUNK_BRANCH=$(git -C "${I_PATH}" branch --show-current)
+	
+	# check if our log is on a valid trunk branch
+	if [ "$TRUNK_BRANCH" != "master" ] && [ "$TRUNK_BRANCH" != "main" ]; then
+		echo "ERROR: ${PWD##*/} appears to be on branch $TRUNK_BRANCH, not master or main. Continue?"
+		read -p "Continue? [y/N] " -n 1 -r
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			return
+		fi
+	fi
+
+	# Check to make sure we actually have commits to import before kicking off the job
+	# use: git rev-list  --author="$(git config user.name)"  --count HEAD --all
+	if [ -z "$(git rev-list  --author="$(git config user.name)"  --count HEAD --all)" ]; then
+		echo "ERROR: ${PWD##*/} appears to have no commits to import for user $(git config user.name)"
+		return
+	fi
+
+	# check if we see evidence of this repository already being in the journal
+	# by searching for [repo:REPO_NAME] in the journal
+	if [ -n "$(git -C "$I_PATH/" log --pretty=format:"%B" 2>&1 | grep "\[repo:${PWD##*/}\]")" ]; then
+		echo "ERROR: ${PWD##*/} already appears to be in the journal! Continue?"
+		read -p "Continue? [y/N] " -n 1 -r
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			return
+		fi
+	fi
+
+	# back-up trunk of log
+	git -C "${I_PATH}" checkout -b "$TRUNK_BRANCH-backup-$(date +%s)"
+	git -C "${I_PATH}" push origin "$TRUNK_BRANCH-backup-$(date +%s)"
+
+	# locals
+	local TMP_BRANCH TMP_BRANCH_REORDER
+	TMP_BRANCH="${PWD##*/}-temp"
+	TMP_BRANCH_REORDER="${PWD##*/}-temp-reorder"
+
+	# checkout temporary branch
+	git -C "${I_PATH}" checkout -b "$TMP_BRANCH"
+
+	# $(printf '%s\n' ${PWD##*/}) - more reliable than echo or basename approach
+	git log --author="$(git config user.name)" --reverse --pretty=format:"%ad|$(printf '%s\n' ${PWD##*/})|%S|%s" --all |
+	while IFS='|' read -r commitTime repoName branchName commitMessage; do
+		# Set the date for the new commit
+		GIT_AUTHOR_DATE="$commitTime" GIT_COMMITTER_DATE="$commitTime" \
+		git -C "${I_PATH}" commit --allow-empty -qam "[repo:$repoName] (branch:$branchName) cmsg: '$commitMessage'"
+	done
+
+	# log out commit messages between current branch HEAD and second commit
+	# test cmd: git -C "${I_PATH}" log --reverse --pretty=format:"%H" --author-date-order $SECOND_COMMIT..HEAD
+
+	local FIRST_COMMIT SECOND_COMMIT CURR_HEAD
+	FIRST_COMMIT=$(git -C "${I_PATH}" log --reverse --format='%H' | head -n 1)
+	SECOND_COMMIT=$(git -C "${I_PATH}" log --reverse --format='%H' | sed -n '2 p')
+	CURR_HEAD=$(git -C "${I_PATH}" log --format='%H' | head -n 1)
+
+	# check out first commit
+	git -C "${I_PATH}" checkout $FIRST_COMMIT
+
+	# Create a temporary branch to store the reordered commits
+	git -C "${I_PATH}" checkout -b "$TMP_BRANCH_REORDER"
+
+	# Reorder when the commits were made by author date for the entire repository
+	git -C "${I_PATH}" log $SECOND_COMMIT..$CURR_HEAD --pretty=format:"%ad|%s" --date=iso | sort | while IFS='|' read -r commitTime commitMessage; do 
+		git -C "${I_PATH}" commit --allow-empty --date="$commitTime" -qam "$commitMessage";
+	done
+
+	git -C "${I_PATH}" filter-branch -f --env-filter 'export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"'
+
+	# Replace the original branch with the reordered branch
+	# TODO - get the appropriate 'main' branch using whatever the current branch is
+	git -C "${I_PATH}" branch -f "${TRUNK_BRANCH}" "$TMP_BRANCH_REORDER"
+	git -C "${I_PATH}" checkout "${TRUNK_BRANCH}"
+	git -C "${I_PATH}" branch -D "$TMP_BRANCH_REORDER"
+	git -C "${I_PATH}" branch -D "$TMP_BRANCH"
+	git -C "${I_PATH}" push origin "${TRUNK_BRANCH}" --force
+
+	# Revert hooks path
+	git config core.hooksPath "$HOOKS_PATH"
 }
 
 # use gpt to summarise the weeks activity into a digest
@@ -318,7 +428,7 @@ for line in sys.stdin:
 
 # used to create a list of unique occurrences of a specific character
 function __i_unique_occurrences_completion {
-	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | sort -rh | tr '\n' ' '
+	__i_list | sed 's/\ /\n/g' | grep ${1} --color=never | sed 's/,//g; s/\.//g' | sort | uniq | grep -e "^${1}[a-zA-Z0-9\-][a-zA-Z0-9\-]*" --color=never | sort -rh | tr '\n' ' ' | tr -d \'\"
 }
 
 # used to power tab completion for the @ and % characters & default
@@ -327,11 +437,11 @@ function __i_completion {
 	cur_word="${COMP_WORDS[COMP_CWORD]}"
 
 	local words
-	words="amend list mentioned tagged find occurrences git upgrade today yesterday digest remember analyse"
+	words="amend list mentioned tagged find occurrences git upgrade today yesterday digest import remember analyse"
 
 	case $cur_word in
-	%*) words=$(__i_unique_occurrences_completion % ) ;;
-	@*) words=$(__i_unique_occurrences_completion @ ) ;;
+	@*) words=$(__i_unique_occurrences_completion @ | sed 's/@[^A-Za-z0-9]//g' ) ;;
+	%*) words=$(__i_unique_occurrences_completion % | sed 's/@[^A-Za-z0-9]//g' ) ;;
 	esac
 
 	COMPREPLY+=($(compgen -W "${words}" "${COMP_WORDS[COMP_CWORD]}"))
