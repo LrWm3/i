@@ -270,13 +270,13 @@ this personal knowledge-base to remember what we've worked on and done in the pa
 
 ```bash
 # I'm trying to remember the kinds of things I worked on in 2022 (would need to process the year but this gets the idea across)
-i analyse since "26 weeks ago" until "25 weeks ago" group what I worked on by subject and output as markdown
+i analyse since "2022-01-01" until "2022-01-05" group what I worked on by subject and output as markdown
 
 # I'm filling my timesheet and forget what I worked on on wednesday
 i analyse since "last tuesday" until "last wednesday" summarize what I did last wednesday
 
-# I want to see the kinds of jobs I might be recommended for based on what I tend to work on
-i analyse since "1 week ago" group what I worked on by day and output as markdown
+# I want to see what I did this week (note, if too much, may need smaller time interval)
+i analyse since "7 days" group what I worked on by day and output as markdown
 
 # I am curious what other jobs I might be suitable for based on the work I do
 i analyse since "14 days ago" until "10 days ago" provide a list of jobs a person with this kind of work log might be suitable fo
